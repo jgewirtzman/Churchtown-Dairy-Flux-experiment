@@ -1,0 +1,7 @@
+"sample_id","description","amendment_type","replicate","total_n_pct","p_pct","k_pct","total_solids_pct","ash_pct"
+"31236670","COMPOST 1","compost",1,0.442,0.13,0.581,47.82,NA
+"31236680","COMPOST 2","compost",2,0.434,0.125,0.586,47.7,NA
+"31236690","COMPOST 3","compost",3,0.403,0.134,0.598,49.3,NA
+"31236650","SLURRY 2","slurry",2,0.135,0.047,0.065,6.75,NA
+"31236660","SLURRY 3","slurry",3,0.129,0.05,0.064,7.34,NA
+"31236640","SLURRY 4","slurry",4,0.129,0.044,0.061,6.37,NA

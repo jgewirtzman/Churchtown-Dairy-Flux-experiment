@@ -131,6 +131,8 @@ cat("Saved output/figures/summary_cmin_timecourse.png\n")
 flux <- read.csv("data/processed/flux_estimates.csv") %>%
   mutate(date = as.Date(date))
 
+application_date <- as.Date("2025-05-28")
+
 flux_summary <- flux %>%
   group_by(treatment, date) %>%
   summarize(mean_co2 = mean(FCO2_DRY, na.rm = TRUE),
@@ -142,6 +144,9 @@ flux_summary <- flux %>%
             .groups = "drop")
 
 p_co2 <- ggplot(flux_summary, aes(x = date, y = mean_co2, color = treatment)) +
+  geom_vline(xintercept = application_date, linetype = "dashed", color = "gray40") +
+  annotate("text", x = application_date, y = Inf, label = "Manure applied",
+           vjust = 1.5, hjust = -0.05, size = 3, color = "gray30") +
   geom_line(linewidth = 0.6) +
   geom_point(size = 1.5) +
   geom_ribbon(aes(ymin = mean_co2 - se_co2, ymax = mean_co2 + se_co2, fill = treatment),
@@ -155,6 +160,7 @@ p_co2 <- ggplot(flux_summary, aes(x = date, y = mean_co2, color = treatment)) +
   theme(legend.position = "bottom")
 
 p_ch4 <- ggplot(flux_summary, aes(x = date, y = mean_ch4, color = treatment)) +
+  geom_vline(xintercept = application_date, linetype = "dashed", color = "gray40") +
   geom_line(linewidth = 0.6) +
   geom_point(size = 1.5) +
   geom_ribbon(aes(ymin = mean_ch4 - se_ch4, ymax = mean_ch4 + se_ch4, fill = treatment),
@@ -169,6 +175,7 @@ p_ch4 <- ggplot(flux_summary, aes(x = date, y = mean_ch4, color = treatment)) +
   theme(legend.position = "bottom")
 
 p_n2o <- ggplot(flux_summary, aes(x = date, y = mean_n2o, color = treatment)) +
+  geom_vline(xintercept = application_date, linetype = "dashed", color = "gray40") +
   geom_line(linewidth = 0.6) +
   geom_point(size = 1.5) +
   geom_ribbon(aes(ymin = mean_n2o - se_n2o, ymax = mean_n2o + se_n2o, fill = treatment),
@@ -228,7 +235,34 @@ cat("Saved output/figures/summary_field_conditions.png\n")
 
 
 # =============================================================================
-# 5. Print summary statistics
+# 5. Vegetation biomass by treatment
+# =============================================================================
+
+biomass <- read.csv("data/processed/biomass.csv")
+
+biomass_summary <- biomass %>%
+  group_by(treatment) %>%
+  summarize(mean = mean(dry_matter_g_m2, na.rm = TRUE),
+            se = sd(dry_matter_g_m2, na.rm = TRUE) / sqrt(n()),
+            .groups = "drop")
+
+p_biomass <- ggplot(biomass_summary, aes(x = treatment, y = mean, fill = treatment)) +
+  geom_col(width = 0.6) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2) +
+  geom_jitter(data = biomass, aes(x = treatment, y = dry_matter_g_m2),
+              width = 0.1, size = 2, alpha = 0.5, inherit.aes = FALSE) +
+  scale_fill_manual(values = treat_colors) +
+  labs(x = "Treatment", y = expression(paste("Dry matter (g m"^{-2}, ")")),
+       title = "Aboveground Vegetation Biomass (Oct 2025)") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+
+ggsave("output/figures/summary_biomass.png", p_biomass, width = 6, height = 5, dpi = 150)
+cat("Saved output/figures/summary_biomass.png\n")
+
+
+# =============================================================================
+# 6. Print summary statistics
 # =============================================================================
 cat("\n=== SUMMARY STATISTICS ===\n\n")
 
@@ -267,5 +301,14 @@ flux %>%
   summarize(n_obs = n(),
             mean_co2 = round(mean(FCO2_DRY, na.rm=TRUE), 2),
             sd_co2 = round(sd(FCO2_DRY, na.rm=TRUE), 2),
+            .groups = "drop") %>%
+  print()
+
+cat("\n--- Vegetation Biomass ---\n")
+biomass %>%
+  group_by(treatment) %>%
+  summarize(n = n(),
+            mean_g_m2 = round(mean(dry_matter_g_m2, na.rm=TRUE), 0),
+            sd_g_m2 = round(sd(dry_matter_g_m2, na.rm=TRUE), 0),
             .groups = "drop") %>%
   print()
