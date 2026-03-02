@@ -262,7 +262,98 @@ cat("Saved output/figures/summary_biomass.png\n")
 
 
 # =============================================================================
-# 6. Print summary statistics
+# 6. Forage quality PCA by treatment
+# =============================================================================
+
+forage <- read.csv("data/processed/dairy_one_forage.csv")
+
+# Select numeric nutrient columns for PCA (drop moisture/dry_matter — they're complements)
+pca_vars <- forage %>%
+  select(crude_protein_pct, avail_protein_pct, adicp_pct, adf_pct, andf_pct,
+         crude_fat_pct, tdn_pct, ca_pct, p_pct, mg_pct, k_pct, s_pct,
+         rfv, ash_pct, lignin_pct, ndicp_pct, starch_pct, nfc_pct,
+         water_sol_carbs_pct, simple_sugars_pct)
+
+pca_fit <- prcomp(pca_vars, center = TRUE, scale. = TRUE)
+
+pca_scores <- as.data.frame(pca_fit$x[, 1:2])
+pca_scores$treatment <- forage$treatment
+pca_scores$plot <- forage$plot
+
+pca_loadings <- as.data.frame(pca_fit$rotation[, 1:2])
+pca_loadings$variable <- rownames(pca_loadings)
+
+# Variance explained
+var_pct <- round(100 * pca_fit$sdev^2 / sum(pca_fit$sdev^2), 1)
+
+# Scale loadings for biplot arrows
+arrow_scale <- max(abs(pca_scores$PC1), abs(pca_scores$PC2)) * 0.8 /
+  max(abs(pca_loadings$PC1), abs(pca_loadings$PC2))
+pca_loadings$PC1s <- pca_loadings$PC1 * arrow_scale
+pca_loadings$PC2s <- pca_loadings$PC2 * arrow_scale
+
+# Clean variable labels
+pca_loadings$label <- gsub("_pct$", "", pca_loadings$variable)
+
+p_pca <- ggplot(pca_scores, aes(x = PC1, y = PC2, color = treatment)) +
+  geom_segment(data = pca_loadings,
+               aes(x = 0, y = 0, xend = PC1s, yend = PC2s),
+               arrow = arrow(length = unit(0.15, "cm")),
+               color = "gray50", linewidth = 0.4, inherit.aes = FALSE) +
+  geom_text(data = pca_loadings,
+            aes(x = PC1s * 1.08, y = PC2s * 1.08, label = label),
+            color = "gray30", size = 2.5, inherit.aes = FALSE) +
+  geom_point(size = 3) +
+  geom_text(aes(label = plot), size = 2.5, vjust = -0.8) +
+  scale_color_manual(values = treat_colors) +
+  labs(x = paste0("PC1 (", var_pct[1], "%)"),
+       y = paste0("PC2 (", var_pct[2], "%)"),
+       color = "Treatment",
+       title = "Forage Quality PCA") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom") +
+  coord_fixed()
+
+ggsave("output/figures/summary_forage_pca.png", p_pca, width = 8, height = 7, dpi = 150)
+cat("Saved output/figures/summary_forage_pca.png\n")
+
+
+# =============================================================================
+# 7. Forage quality z-score heatmap
+# =============================================================================
+
+library(pheatmap)
+
+# Z-score the nutrient matrix (rows = variables, columns = plots)
+zmat <- scale(pca_vars)
+rownames(zmat) <- paste0(forage$treatment, " (", forage$plot, ")")
+colnames(zmat) <- gsub("_pct$", "", colnames(zmat))
+
+# Transpose so variables are rows, plots are columns
+zmat_t <- t(zmat)
+
+# Annotation bar for treatment
+col_anno <- data.frame(Treatment = forage$treatment, row.names = rownames(zmat))
+anno_colors <- list(Treatment = treat_colors)
+
+png("output/figures/summary_forage_heatmap.png", width = 9, height = 8, units = "in", res = 150)
+pheatmap(zmat_t,
+         annotation_col = col_anno,
+         annotation_colors = anno_colors,
+         clustering_method = "ward.D2",
+         color = colorRampPalette(c("#2166ac", "white", "#b2182b"))(100),
+         breaks = seq(-3, 3, length.out = 101),
+         main = "Forage Quality (z-scores)",
+         fontsize = 10,
+         fontsize_row = 9,
+         fontsize_col = 9,
+         angle_col = 45)
+dev.off()
+cat("Saved output/figures/summary_forage_heatmap.png\n")
+
+
+# =============================================================================
+# 8. Print summary statistics
 # =============================================================================
 cat("\n=== SUMMARY STATISTICS ===\n\n")
 
