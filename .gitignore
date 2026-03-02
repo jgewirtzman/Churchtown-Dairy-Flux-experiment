@@ -1,4 +1,15 @@
-.Rproj.user
+# R
+.Rproj.user/
 .Rhistory
 .RData
 .Ruserdata
+
+# macOS
+.DS_Store
+Icon?
+
+# Claude Code
+.claude/
+
+# Large flux metadata PDFs (~700 MB)
+data/raw/flux/metadata_pdfs/
